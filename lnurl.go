@@ -112,19 +112,7 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 			maxSendable = 1000000000
 		}
 
-		// if a nostr private nsec key is set, set nostr nip57 flags
-		if len(s.NostrPrivateKey) > 0 {
-			//allows users to use nsec keys, work with hex internally.
-			//This can be any private key, not necessarily from the user.
-			nostrPrivkeyHex = DecodeBech32(s.NostrPrivateKey)
-			allowNostr = true
-			pk := nostrPrivkeyHex
-			pub, _ := nostr.GetPublicKey(pk)
-			nostrPubkey = pub
-		}
-
-		//serveLNURLpFirst
-		json.NewEncoder(w).Encode(LNURLPayParamsCustom{
+		json.NewEncoder(w).Encode(lnurl.LNURLPayParams{
 			LNURLResponse:   lnurl.LNURLResponse{Status: "OK"},
 			Callback:        fmt.Sprintf("https://%s/.well-known/lnurlp/%s", domain, username),
 			MinSendable:     minSendable,
@@ -207,10 +195,11 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		}
 
 		json.NewEncoder(w).Encode(lnurl.LNURLPayValues{
-			LNURLResponse: payvaluescustom.LNURLResponse,
-			PR:            payvaluescustom.PR,
-			Routes:        payvaluescustom.Routes,
-			SuccessAction: payvaluescustom.SuccessAction,
+			LNURLResponse: lnurl.LNURLResponse{Status: "OK"},
+			PR:            bolt11,
+			Routes:        make([]interface{}, 0),
+			Disposable:    lnurl.FALSE,
+			SuccessAction: lnurl.Action("Payment received!", ""),
 		})
 
 		//if we provided a nsec and the response contained zap information, we wait for the invoice to be paid

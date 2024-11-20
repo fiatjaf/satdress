@@ -25,10 +25,58 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-var (
-	TorProxyURL = "socks5://127.0.0.1:9050"
-	Client      = &http.Client{
-		Timeout: 10 * time.Second,
+func makeMetadata(params *Params) string {
+	metadata, _ := sjson.Set("[]", "0.0", "text/identifier")
+	metadata, _ = sjson.Set(metadata, "0.1", params.Name+"@"+params.Domain)
+
+	metadata, _ = sjson.Set(metadata, "1.0", "text/plain")
+	metadata, _ = sjson.Set(metadata, "1.1", "Satoshis to "+params.Name+"@"+params.Domain+".")
+
+	// TODO support image, custom description
+
+	return metadata
+}
+
+func makeInvoice(
+	params *Params,
+	msat int,
+	pin *string,
+) (bolt11 string, err error) {
+	// prepare params
+	var backend makeinvoice.BackendParams
+	switch params.Kind {
+	case "sparko":
+		backend = makeinvoice.SparkoParams{
+			Host: params.Host,
+			Key:  params.Key,
+		}
+	case "lnd":
+		backend = makeinvoice.LNDParams{
+			Host:     params.Host,
+			Macaroon: params.Key,
+			Private:  true,
+		}
+	case "lnbits":
+		backend = makeinvoice.LNBitsParams{
+			Host: params.Host,
+			Key:  params.Key,
+		}
+	case "lnpay":
+		backend = makeinvoice.LNPayParams{
+			PublicAccessKey:  params.Pak,
+			WalletInvoiceKey: params.Waki,
+		}
+	case "eclair":
+		backend = makeinvoice.EclairParams{
+			Host:     params.Host,
+			Password: "",
+		}
+	case "commando":
+		backend = makeinvoice.CommandoParams{
+			Host:   params.Host,
+			NodeId: params.NodeId,
+			Rune:   params.Rune,
+		}
 	}
 )
 
